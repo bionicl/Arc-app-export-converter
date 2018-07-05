@@ -67,11 +67,20 @@ public class XmlTimeline {
 			this.position = position;
 			this.startTime = startTime;
 			this.name = name;
-			Console.WriteLine("New place - " + name);
 		}
 
 		public override string ToString() {
-			return string.Format("[Place: Name={0}]", name);
+			string time = "";
+			if (startTime.HasValue)
+				time = startTime.Value.ToString("HH:mm");
+			else
+				time = "??:??";
+			time += "-";
+			if (endTime.HasValue)
+				time += endTime.Value.ToString("HH:mm");
+			else
+				time += "??:??";
+			return string.Format("{0} Place: Name={1}, Duration={2}", time, name, Duration);
 		}
 
 	}
@@ -138,14 +147,14 @@ public class XmlTimeline {
 			foreach (var item in waypoints) {
 				tempMerge.Add(item);
 			}
-			waypoints = tempMerge.ToArray();
+			this.waypoints = tempMerge.ToArray();
 			endTime = waypoints[waypoints.Length - 1].time.Value;
 			distance = null;
 			calories = null;
 		}
 
 		public override string ToString() {
-			return string.Format("[Activity: {0}, Duration={1}, Distance={2}, Calories={3}, Speed={4}]", activity, Duration, Distance, Calories, Speed);
+			return string.Format("{0}-{1} Activity: {2}, Duration={3}, Distance={4}, Calories={5}, Speed={6}]", startTime, endTime, activity, Duration.ToString("HH:mm"), Distance, Calories, Speed);
 		}
 	}
 }
@@ -172,19 +181,27 @@ public class XmlReader {
 				break;
 		};
 		sr.Close();
+		SetStartEnd();
 		foreach (var item in timelineItems) {
+			if (item.type == XmlTimeline.TimelineItemType.activity)
+				Console.ForegroundColor = ConsoleColor.Red;
+			else
+				Console.ForegroundColor = ConsoleColor.DarkBlue;
 			Console.WriteLine(item.ToString());
 		}
 	}
 	static void GetPlace(string line, StreamReader sr) {
-		XmlTimeline.Coordinates location = GetLatLon(line);
+		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
 		string name = "";
 		if (!line.EndsWith("/>", StringComparison.Ordinal)) {
 			string nameLine = sr.ReadLine().Replace("\t", "");
-			name = LeaveCenterFromString(nameLine, "<name>", "</name>");
+			name = HelpMethods.LeaveCenterFromString(nameLine, "<name>", "</name>");
 			sr.ReadLine();
 		}
-		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name)));
+		DateTime? startTime = null;
+		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
+			startTime = timelineItems.Last().activity.endTime;
+		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime)));
 
 	}
 	static void GetMove(StreamReader sr) {
@@ -194,7 +211,7 @@ public class XmlReader {
 			sr.ReadLine();
 			return;
 		}
-		typeLine = LeaveCenterFromString(typeLine, "<type>", "</type>");
+		typeLine = HelpMethods.LeaveCenterFromString(typeLine, "<type>", "</type>");
 		ActivityType type = ActivityType.walking;
 		Enum.TryParse(typeLine, out type);
 
@@ -205,60 +222,59 @@ public class XmlReader {
 			line = sr.ReadLine().Replace("\t", "");
 			if (line == "</trkseg>")
 				break;
-			else {
-				XmlTimeline.Coordinates location = GetLatLon(line);
-				location.ele = LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
-				location.time = HelpMethods.ParseIso8601(
-					LeaveCenterFromString(
-						sr.ReadLine().Replace("\t", ""),
-						"<time>",
-						"</time>"));
-				sr.ReadLine();
-				coords.Add(location);
+			else
+				AddWaypoint(line, sr, coords);
+		}
+		if (coords.Count >= 2) {
+			if (timelineItems[timelineItems.Count - 1].type == XmlTimeline.TimelineItemType.activity &&
+				timelineItems[timelineItems.Count - 1].activity.activity == type) {
+				timelineItems[timelineItems.Count - 1].activity.MargeWithNew(coords.ToArray());
+			} else {
+				XmlTimeline.Activity newActivity = new XmlTimeline.Activity(type, coords.ToArray());
+				AddTimeToPreviousPlace(newActivity);
+				timelineItems.Add(new XmlTimeline.TimelineItem(newActivity));
+				AddTimeToPreviousPlace(newActivity);
 			}
 		}
-		if (timelineItems[timelineItems.Count - 1].type == XmlTimeline.TimelineItemType.activity &&
-		    timelineItems[timelineItems.Count - 1].activity.activity == type) {
-			timelineItems[timelineItems.Count - 1].activity.MargeWithNew(coords.ToArray());
-		} else
-			timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Activity(type, coords.ToArray())));
 		sr.ReadLine();
 	}
-
-	// Helpers
-	static XmlTimeline.Coordinates GetLatLon(string line) {
-		string lat = "";
-		string lon = "";
-		bool captureMode = false;
-		string capture = "";
-		foreach (char item in line) {
-			if (item == '"') {
-				captureMode = !captureMode;
-				if (captureMode == false) {
-					if (lat == "")
-						lat = capture;
-					else
-						lon = capture;
-					capture = "";
-				}
-			} else if (captureMode) {
-				capture += item;
-			}
-		}
-		return new XmlTimeline.Coordinates(lat, lon);
+	static void AddWaypoint(string line, StreamReader sr, List<XmlTimeline.Coordinates> coords) {
+		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
+		location.ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
+		location.time = HelpMethods.ParseIso8601(
+			HelpMethods.LeaveCenterFromString(
+				sr.ReadLine().Replace("\t", ""),
+				"<time>",
+				"</time>"));
+		sr.ReadLine();
+		coords.Add(location);
 	}
-	static string LeaveCenterFromString(string text, string removeLeft, string removeRight) {
-		string temp = text;
-		temp = temp.Replace(removeLeft, "");
-		temp = temp.Replace(removeRight, "");
-		return temp;
+	static void AddTimeToPreviousPlace(XmlTimeline.Activity activity) {
+		if (timelineItems.Count >= 1) {
+			if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
+				timelineItems.Last().place.endTime = activity.startTime;
+		}
+	}
+	static void SetStartEnd() {
+		if (timelineItems.First().type == XmlTimeline.TimelineItemType.place) {
+			DateTime time = timelineItems.First().place.endTime.Value;
+			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 0, 0, 0, time.Kind);
+			timelineItems.First().place.startTime = newTime;
+		}
+
+		if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place) {
+			DateTime time = timelineItems.Last().place.startTime.Value;
+			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 23, 59, 59, time.Kind);
+			timelineItems.Last().place.endTime = newTime;
+		}
 	}
 }
 
-// Copied from
-// https://stackoverflow.com/questions/6366408/calculating-distance-between-two-latitude-and-longitude-geocoordinates
-
 public static class HelpMethods {
+
+	// Copied from
+	// https://stackoverflow.com/questions/6366408/calculating-distance-between-two-latitude-and-longitude-geocoordinates
+
 	public static float DistanceTo(XmlTimeline.Coordinates wp1, XmlTimeline.Coordinates wp2, char unit = 'K') {
 		double rlat1 = Math.PI * wp1.lat / 180;
 		double rlat2 = Math.PI * wp2.lat / 180;
@@ -287,5 +303,33 @@ public static class HelpMethods {
 
 	public static DateTime ParseIso8601 (string iso8601Time) {
 		return DateTime.Parse(iso8601Time, null, System.Globalization.DateTimeStyles.RoundtripKind);
+	}
+
+	public static XmlTimeline.Coordinates GetLatLon(string line) {
+		string lat = "";
+		string lon = "";
+		bool captureMode = false;
+		string capture = "";
+		foreach (char item in line) {
+			if (item == '"') {
+				captureMode = !captureMode;
+				if (captureMode == false) {
+					if (lat == "")
+						lat = capture;
+					else
+						lon = capture;
+					capture = "";
+				}
+			} else if (captureMode) {
+				capture += item;
+			}
+		}
+		return new XmlTimeline.Coordinates(lat, lon);
+	}
+	public static string LeaveCenterFromString(string text, string removeLeft, string removeRight) {
+		string temp = text;
+		temp = temp.Replace(removeLeft, "");
+		temp = temp.Replace(removeRight, "");
+		return temp;
 	}
 }

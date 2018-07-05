@@ -105,8 +105,6 @@ public class XmlTimeline {
 
 		public int Duration {
 			get {
-				if (endTime == null)
-					endTime = DateTime.Now;
 				TimeSpan duration = endTime - startTime;
 				return (int)duration.TotalSeconds;
 			}
@@ -154,16 +152,51 @@ public class XmlTimeline {
 		}
 
 		public override string ToString() {
-			return string.Format("{0}-{1} Activity: {2}, Duration={3}, Distance={4}, Calories={5}, Speed={6}]", startTime, endTime, activity, Duration.ToString("HH:mm"), Distance, Calories, Speed);
+			return string.Format("{0}-{1} Activity: {2}, Duration={3}, Distance={4}, Calories={5}, Speed={6}]", startTime.ToString("HH:mm"), endTime.ToString("HH:mm"), activity, Duration, Distance, Calories, Speed);
 		}
 	}
 }
 
-public class XmlReader {
-	static List<XmlTimeline.TimelineItem> timelineItems = new List<XmlTimeline.TimelineItem>();
+public class ActivitySummary {
+	public ActivityType activity;
+	public float duration;
+	public float distance;
+	public float calories;
 
-	public static void LoadFile(string path = "def") {
-		StreamReader sr = new StreamReader("2018-07-04.gpx");
+	public ActivitySummary(List<XmlTimeline.Activity> list, int id) {
+		activity = (ActivityType)id;
+		foreach (var item in list) {
+			duration += item.Duration;
+		}
+		foreach (var item in list) {
+			distance += item.Distance;
+		}
+		foreach (var item in list) {
+			calories += item.Calories;
+		}
+	}
+
+	public override string ToString() {
+		return string.Format("Activity: {0}  Duration: {1}, Distance: {2}, Calories: {3}", activity, duration, distance, calories);
+	}
+
+	public JsonMoves.Day.Summary ToMoves() {
+		return new JsonMoves.Day.Summary(activity, duration, distance, calories);
+	}
+}
+
+public class XmlReader {
+	public List<XmlTimeline.TimelineItem> timelineItems = new List<XmlTimeline.TimelineItem>();
+	List<XmlTimeline.Activity>[] activitySummary = new List<XmlTimeline.Activity>[10];
+	public DateTime date;
+	public ActivitySummary[] summary = new ActivitySummary[10];
+
+	// Activity and places loading
+	public void LoadFile(string path = "file.gpx") {
+		for (int i = 0; i < 10; i++) {
+			activitySummary[i] = new List<XmlTimeline.Activity>();
+		}
+		StreamReader sr = new StreamReader(path);
 
 		// Ignore first 2 lines
 		sr.ReadLine();
@@ -182,15 +215,11 @@ public class XmlReader {
 		};
 		sr.Close();
 		SetStartEnd();
-		foreach (var item in timelineItems) {
-			if (item.type == XmlTimeline.TimelineItemType.activity)
-				Console.ForegroundColor = ConsoleColor.Red;
-			else
-				Console.ForegroundColor = ConsoleColor.DarkBlue;
-			Console.WriteLine(item.ToString());
-		}
+		SetSummary();
+
+		//Display();
 	}
-	static void GetPlace(string line, StreamReader sr) {
+	void GetPlace(string line, StreamReader sr) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
 		string name = "";
 		if (!line.EndsWith("/>", StringComparison.Ordinal)) {
@@ -204,7 +233,7 @@ public class XmlReader {
 		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime)));
 
 	}
-	static void GetMove(StreamReader sr) {
+	void GetMove(StreamReader sr) {
 		// Type
 		string typeLine = sr.ReadLine().Replace("\t", "");
 		if (typeLine == "<trkseg />") {
@@ -234,11 +263,12 @@ public class XmlReader {
 				AddTimeToPreviousPlace(newActivity);
 				timelineItems.Add(new XmlTimeline.TimelineItem(newActivity));
 				AddTimeToPreviousPlace(newActivity);
+				activitySummary[(int)type].Add(newActivity);
 			}
 		}
 		sr.ReadLine();
 	}
-	static void AddWaypoint(string line, StreamReader sr, List<XmlTimeline.Coordinates> coords) {
+	void AddWaypoint(string line, StreamReader sr, List<XmlTimeline.Coordinates> coords) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
 		location.ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
 		location.time = HelpMethods.ParseIso8601(
@@ -249,13 +279,15 @@ public class XmlReader {
 		sr.ReadLine();
 		coords.Add(location);
 	}
-	static void AddTimeToPreviousPlace(XmlTimeline.Activity activity) {
+	void AddTimeToPreviousPlace(XmlTimeline.Activity activity) {
 		if (timelineItems.Count >= 1) {
 			if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
 				timelineItems.Last().place.endTime = activity.startTime;
 		}
 	}
-	static void SetStartEnd() {
+
+	// End calculations
+	void SetStartEnd() {
 		if (timelineItems.First().type == XmlTimeline.TimelineItemType.place) {
 			DateTime time = timelineItems.First().place.endTime.Value;
 			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 0, 0, 0, time.Kind);
@@ -267,6 +299,41 @@ public class XmlReader {
 			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 23, 59, 59, time.Kind);
 			timelineItems.Last().place.endTime = newTime;
 		}
+
+		DateTime tempDate = new DateTime();
+		if (timelineItems.First().type == XmlTimeline.TimelineItemType.activity) {
+			tempDate = timelineItems.First().activity.startTime;
+		} else
+			tempDate = timelineItems.First().place.startTime.Value;
+		date = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+	}
+	void SetSummary() {
+		for (int i = 0; i < 10; i++) {
+			summary[i] = new ActivitySummary(activitySummary[i], i);
+		}
+	}
+
+	// Export options
+	void Display() {
+		foreach (var item in timelineItems) {
+			if (item.type == XmlTimeline.TimelineItemType.activity)
+				Console.ForegroundColor = ConsoleColor.Red;
+			else
+				Console.ForegroundColor = ConsoleColor.DarkBlue;
+			Console.WriteLine(item.ToString());
+		}
+		Console.WriteLine();
+		Console.ForegroundColor = ConsoleColor.DarkGray;
+		foreach (var item in summary) {
+			if (item.duration > 0)
+				Console.WriteLine(item.ToString());
+		}
+	}
+	public void ParseToJson() {
+		List<XmlReader> tempList = new List<XmlReader> {
+			this
+		};
+		JsonParser.Parse(tempList);
 	}
 }
 
@@ -331,5 +398,24 @@ public static class HelpMethods {
 		temp = temp.Replace(removeLeft, "");
 		temp = temp.Replace(removeRight, "");
 		return temp;
+	}
+
+	public static string ConvertToIso1601(DateTime time) {
+		string output = time.ToString(Iso1601Format);
+		return output.Replace(":", "");
+	}
+	public static string Iso1601Format = "yyyyMMddTHHmmsszzz";
+
+	public static JsonMoves.ActivityGroup ReturnGroup(ActivityType type) {
+		switch (type) {
+			case ActivityType.walking:
+				return JsonMoves.ActivityGroup.walking;
+			case ActivityType.running:
+				return JsonMoves.ActivityGroup.running;
+			case ActivityType.cycling:
+				return JsonMoves.ActivityGroup.cycling;
+			default:
+				return JsonMoves.ActivityGroup.transport;
+		}
 	}
 }

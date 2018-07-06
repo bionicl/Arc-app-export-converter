@@ -145,7 +145,7 @@ public class XmlTimeline {
 		}
 
 		public void MargeWithNew(Coordinates[] waypoints) {
-			List<Coordinates> tempMerge = waypoints.ToList();
+			List<Coordinates> tempMerge = this.waypoints.ToList();
 			foreach (var item in waypoints) {
 				tempMerge.Add(item);
 			}
@@ -221,7 +221,7 @@ public class XmlReader {
 		SetStartEnd();
 		SetSummary();
 
-		//Display();
+		Display();
 	}
 	void GetPlace(string line, StreamReader sr) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);

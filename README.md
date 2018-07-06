@@ -7,6 +7,7 @@ Convert GPX exported from [Arc App][1] to storyline Json format used by abandome
 Converter generates all information used by Moves developers:
 - Calculates burned calories based on movement speed and body weight
 - Creates summary of all movement types
+- Sometimes GPX file can contain two different places with the same name - if those are too far from each other, converter will split it into two different places
 
 ### Usage:
 1. Download [newest release][2]
@@ -20,7 +21,6 @@ Converter generates all information used by Moves developers:
 
 ### TODO:
 - Export many files/month file into a single json
-- Create place id’s with smart place grouping based on name and coordinates
 
 [1]:	https://itunes.apple.com/app/arc-app-location-activity-tracker/id1063151918?mt=8
 [2]:	https://github.com/bionicl/Arc-app-export-converter/releases/

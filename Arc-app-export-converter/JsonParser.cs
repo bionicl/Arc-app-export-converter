@@ -47,14 +47,15 @@ public class JsonMoves {
 						this.lon = lon;
 					}
 				}
-				public long id = 1234567;
+				public int id;
 				public string name;
 				public string type = "user";
 				public Location location;
 
-				public Place(string name, Location location) {
+				public Place(string name, Location location, DateTime startTime, DateTime endTime) {
 					this.name = name;
 					this.location = location;
+					this.id = PlacesManager.ReturnPlaceId(this, startTime, endTime);
 				}
 
 			}
@@ -179,7 +180,10 @@ public static class JsonParser {
 	}
 	static JsonMoves.Day.Segment SegmentPlace(XmlTimeline.Place item) {
 		JsonMoves.Day.Segment output = new JsonMoves.Day.Segment(JsonMoves.SegmentType.place, item.startTime.Value, item.endTime.Value);
-		output.place = new JsonMoves.Day.Segment.Place(item.name, new JsonMoves.Day.Segment.Place.Location(item.position.lat, item.position.lon));
+		output.place = new JsonMoves.Day.Segment.Place(item.name,
+		                                               new JsonMoves.Day.Segment.Place.Location(item.position.lat, item.position.lon),
+		                                               item.startTime.Value,
+		                                               item.endTime.Value);
 		return output;
 	}
 	static JsonMoves.Day.Segment SegmentMove(XmlTimeline.Activity item) {
@@ -217,7 +221,7 @@ public static class JsonParser {
 		sw.Write(json);
 		sw.Close();
 		Console.ForegroundColor = ConsoleColor.DarkGreen;
-		Console.Write("Json file created!");
+		Console.WriteLine("Json file created!");
 	}
 }
 

@@ -6,10 +6,15 @@ class MainClass {
 
 	[STAThread]
 	public static void Main() {
+		if (PlacesManager.Loaded)
+			Console.WriteLine("Places initialised");
 		Console.Write("Input your weight (in kg): ");
 		weight = Convert.ToInt32(Console.ReadLine());
 		XmlReader xr = new XmlReader();
 		xr.LoadFile();
 		xr.ParseToJson();
+
+		// On finish
+		PlacesManager.SavePlaces();
 	}
 }

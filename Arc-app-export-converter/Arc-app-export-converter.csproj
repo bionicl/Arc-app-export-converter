@@ -40,6 +40,8 @@
     <Compile Include="BurnedCalCalculator.cs" />
     <Compile Include="XmlReader.cs" />
     <Compile Include="JsonParser.cs" />
+    <Compile Include="PlacesManager.cs" />
+    <Compile Include="HelpMethods.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

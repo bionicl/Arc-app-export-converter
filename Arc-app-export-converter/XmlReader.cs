@@ -42,6 +42,10 @@ public class XmlTimeline {
 			this.lat = Convert.ToDouble(lat);
 			this.lon = Convert.ToDouble(lon);
 		}
+		public Coordinates(double lat, double lon) {
+			this.lat = lat;
+			this.lon = lon;
+		}
 		public override string ToString() {
 			return string.Format("Lat: {0}   Lon: {1}  Ele: {2}", lat, lon, ele);
 		}

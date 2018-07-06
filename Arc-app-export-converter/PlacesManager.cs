@@ -25,7 +25,12 @@ public class Place {
 	}
 
 	public void AddVisit(DateTime startTime, DateTime endTime) {
-		visits.Add(new PlaceVisit(startTime, endTime));
+		PlaceVisit tempVisit = new PlaceVisit(startTime, endTime);
+		foreach (var item in visits) {
+			if (item.startTime == startTime)
+				return;
+		}
+		visits.Add(tempVisit);
 	}
 }
 
@@ -42,6 +47,7 @@ public class PlacesSave {
 public class PlacesManager {
 	static bool loaded;
 	static string placesFileName = "places.json";
+	static float distanceTolerance = 0.07f;
 
 	static List<Place> places = new List<Place>();
 	static int currentId;
@@ -58,7 +64,7 @@ public class PlacesManager {
 
 	public static int ReturnPlaceId(JsonMoves.Day.Segment.Place place, DateTime startTime, DateTime endTime) {
 		foreach (var item in places) {
-			if (place.name == item.name) {
+			if (CheckIfSamePlace(item, place)) {
 				item.AddVisit(startTime, endTime);
 				return item.id;
 			}
@@ -67,6 +73,13 @@ public class PlacesManager {
 		places.Add(newPlace);
 		newPlace.AddVisit(startTime, endTime);
 		return newPlace.id;
+	}
+	static bool CheckIfSamePlace(Place place, JsonMoves.Day.Segment.Place jsonPlace) {
+		if (place.name == jsonPlace.name) {
+			if (HelpMethods.DistanceTo(place.location, jsonPlace.location) <= distanceTolerance)
+				return true;
+		}
+		return false;
 	}
 
 	// Loading files

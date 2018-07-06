@@ -2,11 +2,14 @@
 
 public static class HelpMethods {
 
-	// Copied from
-	// https://stackoverflow.com/questions/6366408/calculating-distance-between-two-latitude-and-longitude-geocoordinates
-
+	// Distance measure
 	public static float DistanceTo(XmlTimeline.Coordinates wp1, XmlTimeline.Coordinates wp2, char unit = 'K') {
+		// Copied from
+		// https://stackoverflow.com/questions/6366408/calculating-distance-between-two-latitude-and-longitude-geocoordinates
+
+
 		double rlat1 = Math.PI * wp1.lat / 180;
+
 		double rlat2 = Math.PI * wp2.lat / 180;
 		double theta = wp1.lon - wp2.lon;
 		double rtheta = Math.PI * theta / 180;
@@ -30,11 +33,23 @@ public static class HelpMethods {
 
 		return distF;
 	}
+	public static float DistanceTo(JsonMoves.Day.Segment.Place.Location jwp1, JsonMoves.Day.Segment.Place.Location jwp2, char unit = 'K') {
+		XmlTimeline.Coordinates wp1 = new XmlTimeline.Coordinates(jwp1.lat, jwp1.lon);
+		XmlTimeline.Coordinates wp2 = new XmlTimeline.Coordinates(jwp2.lat, jwp2.lon);
+		return DistanceTo(wp1, wp2, unit);
+	}
 
+	// Time conversations
 	public static DateTime ParseIso8601(string iso8601Time) {
 		return DateTime.Parse(iso8601Time, null, System.Globalization.DateTimeStyles.RoundtripKind);
 	}
+	public static string ConvertToIso1601(DateTime time) {
+		string output = time.ToString(Iso1601Format);
+		return output.Replace(":", "");
+	}
+	public static string Iso1601Format = "yyyyMMddTHHmmsszzz";
 
+	// GPX conversion
 	public static XmlTimeline.Coordinates GetLatLon(string line) {
 		string lat = "";
 		string lon = "";
@@ -63,12 +78,7 @@ public static class HelpMethods {
 		return temp;
 	}
 
-	public static string ConvertToIso1601(DateTime time) {
-		string output = time.ToString(Iso1601Format);
-		return output.Replace(":", "");
-	}
-	public static string Iso1601Format = "yyyyMMddTHHmmsszzz";
-
+	// To Json conversion
 	public static JsonMoves.ActivityGroup ReturnGroup(ActivityType type) {
 		switch (type) {
 			case ActivityType.walking:

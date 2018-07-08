@@ -131,7 +131,7 @@ public class JsonMoves {
 
 
 public static class JsonParser {
-	public static void Parse(List<XmlReader> xml) {
+	public static void Parse(List<XmlReader> xml, string fileName) {
 		JsonMoves json = new JsonMoves();
 		json.day = new JsonMoves.Day[xml.Count];
 		for (int i = 0; i < xml.Count; i++) {
@@ -150,7 +150,7 @@ public static class JsonParser {
 			NullValueHandling = NullValueHandling.Ignore
 		});
 		output = CleanUpJson(output);
-		WriteToFile(output);
+		WriteToFile(output, fileName);
 	}
 
 
@@ -216,12 +216,12 @@ public static class JsonParser {
 		return json;
 	}
 
-	static void WriteToFile(string json) {
-		StreamWriter sw = new StreamWriter("file.json");
+	static void WriteToFile(string json, string fileName) {
+		StreamWriter sw = new StreamWriter(fileName);
 		sw.Write(json);
 		sw.Close();
 		Console.ForegroundColor = ConsoleColor.DarkGreen;
-		Console.WriteLine("Json file created!");
+		Console.WriteLine(string.Format("Json file created!"));
 	}
 }
 

@@ -11,16 +11,12 @@ Converter generates all information used by Moves developers:
 
 ### Usage:
 1. Download [newest release][2]
-2. Generate GPX in Arc App and place file named „file.gpx” in the same folder with .exe
+2. Generate GPX in Arc App and place file in the same folder with .exe (app support both single-day and month GPX files, make sure they end with *.gpx*. You can also place many GPX files at once)
 3. Run app, input weight - json file will be generated in the same folder
 
 ### Notes:
 - Step counts and Calories idle are not present in final export
-- For now you can convert only one-day gpx into one-day storyline json
 - All places are marked as „user”. I hope in future updates Arc GPX will also include Foursquare id
-
-### TODO:
-- Export many files/month file into a single json
 
 [1]:	https://itunes.apple.com/app/arc-app-location-activity-tracker/id1063151918?mt=8
 [2]:	https://github.com/bionicl/Arc-app-export-converter/releases/

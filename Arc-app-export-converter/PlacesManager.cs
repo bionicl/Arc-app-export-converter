@@ -97,6 +97,8 @@ public class PlacesManager {
 		StreamWriter sw = new StreamWriter(placesFileName);
 		sw.Write(JsonConvert.SerializeObject(new PlacesSave(places, currentId)));
 		sw.Close();
+		Console.WriteLine();
+		Console.ForegroundColor = ConsoleColor.Blue;
 		Console.WriteLine("Places database saved to file " + placesFileName);
 	}
 

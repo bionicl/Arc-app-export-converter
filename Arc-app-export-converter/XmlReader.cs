@@ -14,12 +14,12 @@ public class XmlTimeline {
 		public Place place;
 		public Activity activity;
 
-		public TimelineItem (Place place) {
+		public TimelineItem(Place place) {
 			type = TimelineItemType.place;
 			this.place = place;
 		}
 
-		public TimelineItem (Activity activity) {
+		public TimelineItem(Activity activity) {
 			type = TimelineItemType.activity;
 			this.activity = activity;
 		}
@@ -31,6 +31,7 @@ public class XmlTimeline {
 				return place.ToString();
 		}
 
+		//Time
 		public DateTime ReturnDate() {
 			DateTime tempDate = new DateTime();
 			if (type == TimelineItemType.activity)
@@ -38,6 +39,36 @@ public class XmlTimeline {
 			else
 				tempDate = place.startTime.Value;
 			return new DateTime(tempDate.Year, tempDate.Month, tempDate.Day, 12, 0, 0, tempDate.Kind);
+		}
+
+		public DateTime EndTime {
+			get {
+				if (type == TimelineItemType.activity)
+					return activity.endTime;
+				else
+					return place.endTime.Value;
+			}
+			set {
+				if (type == TimelineItemType.activity)
+					activity.endTime = value;
+				else
+					place.endTime = value;
+			}
+		}
+
+		public DateTime StartTime {
+			get {
+				if (type == TimelineItemType.activity)
+					return activity.startTime;
+				else
+					return place.startTime.Value;
+			}
+			set {
+				if (type == TimelineItemType.activity)
+					activity.startTime = value;
+				else
+					place.startTime = value;
+			}
 		}
 	}
 
@@ -203,10 +234,13 @@ public class XmlReader {
 	List<XmlTimeline.Activity>[] activitySummary = new List<XmlTimeline.Activity>[10];
 	public DateTime date;
 	public ActivitySummary[] summary = new ActivitySummary[10];
-	string originalName;
+	public string originalName;
 
 	// Activity and places loading
 	public XmlReader(string path) {
+		Console.ForegroundColor = ConsoleColor.DarkGray;
+		Console.WriteLine();
+		Console.WriteLine("Opening file: " + path);
 		originalName = path.Replace(".gpx", "");
 		LoadFile(path);
 	}
@@ -215,9 +249,9 @@ public class XmlReader {
 			activitySummary[i] = new List<XmlTimeline.Activity>();
 		}
 		this.timelineItems = timelineItems;
-		Console.WriteLine("Creating with items: " + timelineItems.Count);
-		SetStartEnd();
+		//SetStartEnd();
 		SetSummary();
+		SetXmlDate();
 	}
 
 	public void LoadFile(string path) {
@@ -244,6 +278,7 @@ public class XmlReader {
 		sr.Close();
 		SetStartEnd();
 		SetSummary();
+		SetXmlDate();
 
 		//Display();
 	}
@@ -316,24 +351,35 @@ public class XmlReader {
 
 	// End calculations
 	void SetStartEnd() {
-		if (timelineItems.First().type == XmlTimeline.TimelineItemType.place) {
+		if (timelineItems.First().type == XmlTimeline.TimelineItemType.place && !timelineItems.First().place.startTime.HasValue) {
 			DateTime time = timelineItems.First().place.endTime.Value;
 			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 0, 0, 0, time.Kind);
 			timelineItems.First().place.startTime = newTime;
 		}
 
-		if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place) {
+		if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place && !timelineItems.Last().place.endTime.HasValue) {
 			DateTime time = timelineItems.Last().place.startTime.Value;
 			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 23, 59, 59, time.Kind);
 			timelineItems.Last().place.endTime = newTime;
 		}
-
+	}
+	void SetXmlDate() {
 		DateTime tempDate = new DateTime();
-		if (timelineItems.First().type == XmlTimeline.TimelineItemType.activity) {
-			tempDate = timelineItems.First().activity.startTime;
-		} else
-			tempDate = timelineItems.First().place.startTime.Value;
-		date = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+
+		if (timelineItems.Count > 1) {
+			tempDate = timelineItems.First().EndTime;
+		} else {
+			DateTime tempEndTime = timelineItems[0].EndTime;
+			if (tempEndTime.Day - timelineItems[0].StartTime.Day == 2) {
+				tempDate = timelineItems.First().StartTime;
+				tempDate.AddDays(1);
+			} else if (tempEndTime.Hour == 23 && tempEndTime.Minute == 59 && tempEndTime.Second == 59)
+				tempDate = tempEndTime;
+			else
+				tempDate = timelineItems[0].StartTime;
+		}
+
+		date = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day, 12, 0, 0, tempDate.Kind);
 	}
 	void SetSummary() {
 		foreach (var item in timelineItems) {
@@ -376,6 +422,7 @@ public class XmlReader {
 		DateTime? currentDate = null;
 		List<XmlReader> output = new List<XmlReader>();
 		List<XmlTimeline.TimelineItem> tempList = new List<XmlTimeline.TimelineItem>();
+		XmlTimeline.TimelineItem lastItem = timelineItems[0];
 
 		foreach (var item in timelineItems) {
 			if (!currentDate.HasValue) {
@@ -384,12 +431,15 @@ public class XmlReader {
 
 			if (currentDate == item.ReturnDate()) {
 				tempList.Add(item);
+				lastItem = item;
 			} else {
 				XmlReader tempXml = new XmlReader(tempList .ToArray().ToList()); // stupid workaround to clone
 				output.Add(tempXml);
 				tempList.Clear();
 				currentDate = item.ReturnDate();
+				tempList.Add(lastItem);
 				tempList.Add(item);
+				lastItem = item;
 			}
 		}
 		output.Add(new XmlReader(tempList.ToArray().ToList()));

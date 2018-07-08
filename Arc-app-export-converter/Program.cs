@@ -8,8 +8,10 @@ class MainClass {
 
 	[STAThread]
 	public static void Main() {
-		if (PlacesManager.Loaded)
+		if (PlacesManager.Loaded) {
+			Console.ForegroundColor = ConsoleColor.DarkGray;
 			Console.WriteLine("Places initialised");
+		}
 		SetupWeight();
 
 		foreach (var item in ReturnFilePath()) {
@@ -17,10 +19,7 @@ class MainClass {
 
 			// Split into days
 			List<XmlReader> daysInXml = XmlReader.Split(xr);
-			foreach (var item2 in daysInXml) {
-				Console.WriteLine("PROGRAM There are segments in this xml: " + item2.timelineItems.Count);
-			}
-			JsonParser.Parse(daysInXml, "test.json");
+			JsonParser.Parse(daysInXml, xr.originalName + ".json");
 		}
 
 		// On finish
@@ -28,6 +27,7 @@ class MainClass {
 	}
 
 	static void SetupWeight() {
+		Console.ResetColor();
 		Console.Write("Input your weight (in kg): ");
 		weight = Convert.ToInt32(Console.ReadLine());
 	}

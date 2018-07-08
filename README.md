@@ -11,7 +11,7 @@ Converter generates all information used by Moves developers:
 
 ### Usage:
 1. Download [newest release][2]
-2. Generate GPX in Arc App and place file in the same folder with .exe (app support both single-day and month GPX files, make sure they end with *.gpx*)
+2. Generate GPX in Arc App and place file in the same folder with .exe (app support both single-day and month GPX files, make sure they end with *.gpx*. You can also place many GPX files at once)
 3. Run app, input weight - json file will be generated in the same folder
 
 ### Notes:

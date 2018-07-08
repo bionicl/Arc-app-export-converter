@@ -30,6 +30,15 @@ public class XmlTimeline {
 			else
 				return place.ToString();
 		}
+
+		public DateTime ReturnDate() {
+			DateTime tempDate = new DateTime();
+			if (type == TimelineItemType.activity)
+				tempDate = activity.startTime;
+			else
+				tempDate = place.startTime.Value;
+			return new DateTime(tempDate.Year, tempDate.Month, tempDate.Day, 12, 0, 0, tempDate.Kind);
+		}
 	}
 
 	public class Coordinates {
@@ -194,9 +203,24 @@ public class XmlReader {
 	List<XmlTimeline.Activity>[] activitySummary = new List<XmlTimeline.Activity>[10];
 	public DateTime date;
 	public ActivitySummary[] summary = new ActivitySummary[10];
+	string originalName;
 
 	// Activity and places loading
-	public void LoadFile(string path = "file.gpx") {
+	public XmlReader(string path) {
+		originalName = path.Replace(".gpx", "");
+		LoadFile(path);
+	}
+	public XmlReader(List<XmlTimeline.TimelineItem> timelineItems) {
+		for (int i = 0; i < 10; i++) {
+			activitySummary[i] = new List<XmlTimeline.Activity>();
+		}
+		this.timelineItems = timelineItems;
+		Console.WriteLine("Creating with items: " + timelineItems.Count);
+		SetStartEnd();
+		SetSummary();
+	}
+
+	public void LoadFile(string path) {
 		for (int i = 0; i < 10; i++) {
 			activitySummary[i] = new List<XmlTimeline.Activity>();
 		}
@@ -221,7 +245,7 @@ public class XmlReader {
 		SetStartEnd();
 		SetSummary();
 
-		Display();
+		//Display();
 	}
 	void GetPlace(string line, StreamReader sr) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
@@ -267,7 +291,7 @@ public class XmlReader {
 				AddTimeToPreviousPlace(newActivity);
 				timelineItems.Add(new XmlTimeline.TimelineItem(newActivity));
 				AddTimeToPreviousPlace(newActivity);
-				activitySummary[(int)type].Add(newActivity);
+				//activitySummary[(int)type].Add(newActivity);
 			}
 		}
 		sr.ReadLine();
@@ -312,6 +336,11 @@ public class XmlReader {
 		date = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
 	}
 	void SetSummary() {
+		foreach (var item in timelineItems) {
+			if (item.type == XmlTimeline.TimelineItemType.activity) {
+				activitySummary[(int)item.activity.activity].Add(item.activity);
+			}
+		}
 		for (int i = 0; i < 10; i++) {
 			summary[i] = new ActivitySummary(activitySummary[i], i);
 		}
@@ -337,6 +366,35 @@ public class XmlReader {
 		List<XmlReader> tempList = new List<XmlReader> {
 			this
 		};
-		JsonParser.Parse(tempList);
+		JsonParser.Parse(tempList, originalName + ".json");
+	}
+
+	// Split xml file
+	public static List<XmlReader> Split(XmlReader xml) {
+		List<XmlTimeline.TimelineItem> timelineItems = xml.timelineItems;
+
+		DateTime? currentDate = null;
+		List<XmlReader> output = new List<XmlReader>();
+		List<XmlTimeline.TimelineItem> tempList = new List<XmlTimeline.TimelineItem>();
+
+		foreach (var item in timelineItems) {
+			if (!currentDate.HasValue) {
+				currentDate = item.ReturnDate();
+			}
+
+			if (currentDate == item.ReturnDate()) {
+				tempList.Add(item);
+			} else {
+				XmlReader tempXml = new XmlReader(tempList .ToArray().ToList()); // stupid workaround to clone
+				output.Add(tempXml);
+				tempList.Clear();
+				currentDate = item.ReturnDate();
+				tempList.Add(item);
+			}
+		}
+		output.Add(new XmlReader(tempList.ToArray().ToList()));
+		tempList.Clear();
+
+		return output;
 	}
 }

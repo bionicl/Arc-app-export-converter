@@ -47,7 +47,7 @@ public class PlacesSave {
 public class PlacesManager {
 	static bool loaded;
 	static string placesFileName = "places.json";
-	static float distanceTolerance = 0.07f;
+	static float distanceTolerance = 0.4f;
 
 	static List<Place> places = new List<Place>();
 	static int currentId;

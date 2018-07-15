@@ -96,6 +96,7 @@ public class XmlTimeline {
 		public Coordinates position;
 		public DateTime? startTime;
 		public DateTime? endTime;
+		public string ele;
 		public int Duration {
 			get {
 				if (!startTime.HasValue || !endTime.HasValue) {
@@ -107,7 +108,7 @@ public class XmlTimeline {
 			}
 		}
 
-		public Place(Coordinates position, string name, DateTime? startTime = null) {
+		public Place(Coordinates position, string name, DateTime? startTime = null, string ele = null) {
 			this.position = position;
 			this.startTime = startTime;
 			this.name = name;
@@ -284,16 +285,32 @@ public class XmlReader {
 	}
 	void GetPlace(string line, StreamReader sr) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
-		string name = "";
-		if (!line.EndsWith("/>", StringComparison.Ordinal)) {
-			string nameLine = sr.ReadLine().Replace("\t", "");
-			name = HelpMethods.LeaveCenterFromString(nameLine, "<name>", "</name>");
-			sr.ReadLine();
-		}
-		DateTime? startTime = null;
-		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
-			startTime = timelineItems.Last().activity.endTime;
-		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime)));
+
+		// time
+		DateTime startTime = new DateTime();
+		startTime = HelpMethods.ParseIso8601(
+			HelpMethods.LeaveCenterFromString(
+				sr.ReadLine().Replace("\t", ""),
+				"<time>",
+				"</time>"));
+
+		// ele
+		string ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
+
+		// name
+		string tempLine = sr.ReadLine().Replace("\t", "");
+		string name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
+
+		// closing line
+		sr.ReadLine();
+
+		// If previous is place
+		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
+			timelineItems.Last().place.endTime = startTime;
+
+		//if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
+		//	startTime = timelineItems.Last().activity.endTime;
+		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele)));
 
 	}
 	void GetMove(StreamReader sr) {

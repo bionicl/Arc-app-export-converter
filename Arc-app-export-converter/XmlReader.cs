@@ -96,6 +96,7 @@ public class XmlTimeline {
 		public Coordinates position;
 		public DateTime? startTime;
 		public DateTime? endTime;
+		public string ele;
 		public int Duration {
 			get {
 				if (!startTime.HasValue || !endTime.HasValue) {
@@ -107,7 +108,7 @@ public class XmlTimeline {
 			}
 		}
 
-		public Place(Coordinates position, string name, DateTime? startTime = null) {
+		public Place(Coordinates position, string name, DateTime? startTime = null, string ele = null) {
 			this.position = position;
 			this.startTime = startTime;
 			this.name = name;
@@ -284,31 +285,54 @@ public class XmlReader {
 	}
 	void GetPlace(string line, StreamReader sr) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
+
+		// time
+		DateTime startTime = new DateTime();
+		startTime = HelpMethods.ParseIso8601(
+			HelpMethods.LeaveCenterFromString(
+				sr.ReadLine().Replace("\t", ""),
+				"<time>",
+				"</time>"));
+
+		// ele
+		string ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
+
+		// name (if exist)
 		string name = "";
-		if (!line.EndsWith("/>", StringComparison.Ordinal)) {
-			string nameLine = sr.ReadLine().Replace("\t", "");
-			name = HelpMethods.LeaveCenterFromString(nameLine, "<name>", "</name>");
+		string tempLine = sr.ReadLine().Replace("\t", "");
+		if (tempLine.StartsWith("<name>")) {
+			name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
 			sr.ReadLine();
 		}
-		DateTime? startTime = null;
-		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
-			startTime = timelineItems.Last().activity.endTime;
-		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime)));
+
+		// If previous is place
+		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
+			timelineItems.Last().place.endTime = startTime;
+
+		//if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
+		//	startTime = timelineItems.Last().activity.endTime;
+		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele)));
 
 	}
 	void GetMove(StreamReader sr) {
 		// Type
-		string typeLine = sr.ReadLine().Replace("\t", "");
-		if (typeLine == "<trkseg />") {
+		string line = sr.ReadLine().Replace("\t", "");
+		if (line == "<trkseg />") {
 			sr.ReadLine();
 			return;
 		}
-		typeLine = HelpMethods.LeaveCenterFromString(typeLine, "<type>", "</type>");
 		ActivityType type = ActivityType.walking;
-		Enum.TryParse(typeLine, out type);
+		if (line.StartsWith("<type>", StringComparison.CurrentCulture)) {
+			line = HelpMethods.LeaveCenterFromString(line, "<type>", "</type>");
+			Enum.TryParse(line, out type);
 
-		// Track points
-		string line = sr.ReadLine().Replace("\t", "");
+			// Track points
+			line = sr.ReadLine().Replace("\t", "");
+		}
+		if (line == "<trkseg />") {
+			sr.ReadLine();
+			return;
+		}
 		List<XmlTimeline.Coordinates> coords = new List<XmlTimeline.Coordinates>();
 		while (true) {
 			line = sr.ReadLine().Replace("\t", "");

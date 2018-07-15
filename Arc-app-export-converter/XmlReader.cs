@@ -297,12 +297,13 @@ public class XmlReader {
 		// ele
 		string ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
 
-		// name
+		// name (if exist)
+		string name = "";
 		string tempLine = sr.ReadLine().Replace("\t", "");
-		string name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
-
-		// closing line
-		sr.ReadLine();
+		if (tempLine.StartsWith("<name>")) {
+			name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
+			sr.ReadLine();
+		}
 
 		// If previous is place
 		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
@@ -315,17 +316,23 @@ public class XmlReader {
 	}
 	void GetMove(StreamReader sr) {
 		// Type
-		string typeLine = sr.ReadLine().Replace("\t", "");
-		if (typeLine == "<trkseg />") {
+		string line = sr.ReadLine().Replace("\t", "");
+		if (line == "<trkseg />") {
 			sr.ReadLine();
 			return;
 		}
-		typeLine = HelpMethods.LeaveCenterFromString(typeLine, "<type>", "</type>");
 		ActivityType type = ActivityType.walking;
-		Enum.TryParse(typeLine, out type);
+		if (line.StartsWith("<type>", StringComparison.CurrentCulture)) {
+			line = HelpMethods.LeaveCenterFromString(line, "<type>", "</type>");
+			Enum.TryParse(line, out type);
 
-		// Track points
-		string line = sr.ReadLine().Replace("\t", "");
+			// Track points
+			line = sr.ReadLine().Replace("\t", "");
+		}
+		if (line == "<trkseg />") {
+			sr.ReadLine();
+			return;
+		}
 		List<XmlTimeline.Coordinates> coords = new List<XmlTimeline.Coordinates>();
 		while (true) {
 			line = sr.ReadLine().Replace("\t", "");

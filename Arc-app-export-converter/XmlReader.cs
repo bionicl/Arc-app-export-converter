@@ -321,7 +321,7 @@ public class XmlReader {
 			sr.ReadLine();
 			return;
 		}
-		ActivityType type = ActivityType.walking;
+		ActivityType type = ActivityType.car;
 		if (line.StartsWith("<type>", StringComparison.CurrentCulture)) {
 			line = HelpMethods.LeaveCenterFromString(line, "<type>", "</type>");
 			Enum.TryParse(line, out type);

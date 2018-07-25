@@ -15,11 +15,15 @@ class MainClass {
 		SetupWeight();
 
 		foreach (var item in ReturnFilePath()) {
-			XmlReader xr = new XmlReader(item);
+			Console.ForegroundColor = ConsoleColor.DarkGray;
+			Console.WriteLine();
+			Console.WriteLine("Opening file: " + item);
+			XmlReader xr = new XmlReader(item, true, weight);
+
 
 			// Split into days
 			List<XmlReader> daysInXml = XmlReader.Split(xr);
-			JsonParser.Parse(daysInXml, xr.originalName + ".json");
+			JsonParser.Parse(daysInXml, xr.originalName + ".json", true);
 		}
 
 		// On finish

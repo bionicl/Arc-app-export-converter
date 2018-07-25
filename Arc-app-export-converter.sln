@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arc-app-export-converter", "Arc-app-export-converter\Arc-app-export-converter.csproj", "{E157221F-A3A0-4042-9EDF-970EFA55FB1A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConverterLibrary", "ConverterLibrary\ConverterLibrary.csproj", "{C9BE8557-B28F-4AC0-B513-0815AF29C972}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -13,5 +15,9 @@ Global
 		{E157221F-A3A0-4042-9EDF-970EFA55FB1A}.Debug|x86.Build.0 = Debug|x86
 		{E157221F-A3A0-4042-9EDF-970EFA55FB1A}.Release|x86.ActiveCfg = Release|x86
 		{E157221F-A3A0-4042-9EDF-970EFA55FB1A}.Release|x86.Build.0 = Release|x86
+		{C9BE8557-B28F-4AC0-B513-0815AF29C972}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C9BE8557-B28F-4AC0-B513-0815AF29C972}.Debug|x86.Build.0 = Debug|Any CPU
+		{C9BE8557-B28F-4AC0-B513-0815AF29C972}.Release|x86.ActiveCfg = Release|Any CPU
+		{C9BE8557-B28F-4AC0-B513-0815AF29C972}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 public class XmlTimeline {
 
@@ -167,7 +168,7 @@ public class XmlTimeline {
 			get {
 				if (calories.HasValue)
 					return calories.Value;
-				int temp = BurnedCalCalculator.Calcualate(activity, Duration, Speed, MainClass.weight);
+				int temp = BurnedCalCalculator.Calcualate(activity, Duration, Speed, 80);
 				calories = temp;
 				return calories.Value;
 			}
@@ -236,14 +237,17 @@ public class XmlReader {
 	public DateTime date;
 	public ActivitySummary[] summary = new ActivitySummary[10];
 	public string originalName;
+	public float weight;
 
 	// Activity and places loading
-	public XmlReader(string path) {
-		Console.ForegroundColor = ConsoleColor.DarkGray;
-		Console.WriteLine();
-		Console.WriteLine("Opening file: " + path);
-		originalName = path.Replace(".gpx", "");
-		LoadFile(path);
+	public XmlReader(string path, bool isPath, float weight) {
+		this.weight = weight;
+		if (isPath) {
+			originalName = path.Replace(".gpx", "");
+			LoadFile(path);
+		} else {
+			LoadString(path);
+		}
 	}
 	public XmlReader(List<XmlTimeline.TimelineItem> timelineItems) {
 		for (int i = 0; i < 10; i++) {
@@ -255,11 +259,10 @@ public class XmlReader {
 		SetXmlDate();
 	}
 
-	public void LoadFile(string path) {
+	public void Load(StreamReader sr) {
 		for (int i = 0; i < 10; i++) {
 			activitySummary[i] = new List<XmlTimeline.Activity>();
 		}
-		StreamReader sr = new StreamReader(path);
 
 		// Ignore first 2 lines
 		sr.ReadLine();
@@ -283,6 +286,17 @@ public class XmlReader {
 
 		//Display();
 	}
+
+	public void LoadString(string text) {
+		MemoryStream mStrm = new MemoryStream(Encoding.UTF8.GetBytes(text));
+		StreamReader tempSteamR = new StreamReader(mStrm, System.Text.Encoding.UTF8, true);
+		Load(tempSteamR);
+	}
+	public void LoadFile(string path) {
+		StreamReader sr = new StreamReader(path);
+		Load(sr);
+	}
+
 	void GetPlace(string line, StreamReader sr) {
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
 
@@ -321,7 +335,7 @@ public class XmlReader {
 			sr.ReadLine();
 			return;
 		}
-		ActivityType type = ActivityType.walking;
+		ActivityType type = ActivityType.car;
 		if (line.StartsWith("<type>", StringComparison.CurrentCulture)) {
 			line = HelpMethods.LeaveCenterFromString(line, "<type>", "</type>");
 			Enum.TryParse(line, out type);

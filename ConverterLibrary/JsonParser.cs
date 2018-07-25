@@ -131,7 +131,7 @@ public class JsonMoves {
 
 
 public static class JsonParser {
-	public static void Parse(List<XmlReader> xml, string fileName) {
+	public static string Parse(List<XmlReader> xml, string fileName, bool writeToFile = false) {
 		JsonMoves json = new JsonMoves();
 		json.day = new JsonMoves.Day[xml.Count];
 		for (int i = 0; i < xml.Count; i++) {
@@ -150,7 +150,9 @@ public static class JsonParser {
 			NullValueHandling = NullValueHandling.Ignore
 		});
 		output = CleanUpJson(output);
-		WriteToFile(output, fileName);
+		if (writeToFile)
+			WriteToFile(output, fileName);
+		return output;
 	}
 
 

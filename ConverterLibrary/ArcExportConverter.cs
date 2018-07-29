@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Bionicl {
+namespace TealFire {
 	public class ArcExportConverter {
 
 		/// <summary>

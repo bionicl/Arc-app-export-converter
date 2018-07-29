@@ -52,10 +52,24 @@ public class JsonMoves {
 				public string type = "user";
 				public Location location;
 
-				public Place(string name, Location location, DateTime startTime, DateTime endTime) {
+				// Place
+				public string facebookPlaceId;
+				public string foursquareId;
+
+				public Place(string name, Location location, DateTime startTime, DateTime endTime, string link) {
 					this.name = name;
 					this.location = location;
 					this.id = PlacesManager.ReturnPlaceId(this, startTime, endTime);
+
+					if (!string.IsNullOrEmpty(link)) {
+						if (link.StartsWith("http://facebook.com/", StringComparison.Ordinal)) {
+							type = "facebook";
+							facebookPlaceId = link.Replace("http://facebook.com/", "");
+						} else if (link.StartsWith("http://foursquare.com/", StringComparison.Ordinal)) {
+							type = "foursquare";
+							foursquareId = link.Replace("http://foursquare.com/venue/", "");
+						}
+					}
 				}
 
 			}
@@ -185,7 +199,8 @@ public static class JsonParser {
 		output.place = new JsonMoves.Day.Segment.Place(item.name,
 		                                               new JsonMoves.Day.Segment.Place.Location(item.position.lat, item.position.lon),
 		                                               item.startTime.Value,
-		                                               item.endTime.Value);
+		                                               item.endTime.Value,
+		                                               item.link);
 		return output;
 	}
 	static JsonMoves.Day.Segment SegmentMove(XmlTimeline.Activity item) {

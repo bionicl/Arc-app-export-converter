@@ -98,6 +98,8 @@ public class XmlTimeline {
 		public DateTime? startTime;
 		public DateTime? endTime;
 		public string ele;
+		public string link;
+
 		public int Duration {
 			get {
 				if (!startTime.HasValue || !endTime.HasValue) {
@@ -109,10 +111,11 @@ public class XmlTimeline {
 			}
 		}
 
-		public Place(Coordinates position, string name, DateTime? startTime = null, string ele = null) {
+		public Place(Coordinates position, string name, DateTime? startTime = null, string ele = null, string link = null) {
 			this.position = position;
 			this.startTime = startTime;
 			this.name = name;
+			this.link = link;
 		}
 
 		public override string ToString() {
@@ -316,7 +319,12 @@ public class XmlReader {
 		string tempLine = sr.ReadLine().Replace("\t", "");
 		if (tempLine.StartsWith("<name>")) {
 			name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
-			sr.ReadLine();
+			tempLine = sr.ReadLine().Replace("\t", "");
+		}
+		string link = "";
+		if (tempLine.StartsWith("<link")) {
+			link = HelpMethods.LeaveCenterFromString(tempLine, "<link href=\"", "\" />");
+			tempLine = sr.ReadLine().Replace("\t", "");
 		}
 
 		// If previous is place
@@ -325,7 +333,7 @@ public class XmlReader {
 
 		//if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
 		//	startTime = timelineItems.Last().activity.endTime;
-		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele)));
+		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele, link)));
 
 	}
 	void GetMove(StreamReader sr) {
@@ -471,7 +479,7 @@ public class XmlReader {
 				tempList.Add(item);
 				lastItem = item;
 			} else {
-				XmlReader tempXml = new XmlReader(tempList .ToArray().ToList()); // stupid workaround to clone
+				XmlReader tempXml = new XmlReader(tempList.ToArray().ToList()); // stupid workaround to clone
 				output.Add(tempXml);
 				tempList.Clear();
 				currentDate = item.ReturnDate();

@@ -10,8 +10,10 @@ Converter generates all information used by Moves developers:
 - Sometimes GPX file can contain two different places with the same name - if those are too far from each other, converter will split it into two different places
 
 ### Dll Usage:
-	// Convert GPX to Json (string gpxString, float weight) 
-	TealFire.ArcExportConverter.ConvertGpxToJson(jsonString, 80)
+```cs
+// Convert GPX to Json (string gpxString, float weight) 
+TealFire.ArcExportConverter.ConvertGpxToJson(jsonString, 80)
+```
 
 ### App Usage:
 1. Download [newest release][2]

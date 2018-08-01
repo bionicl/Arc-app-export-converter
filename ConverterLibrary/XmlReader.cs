@@ -312,11 +312,15 @@ public class XmlReader {
 				"</time>"));
 
 		// ele
-		string ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
+		string ele = "";
+		string tempLine = sr.ReadLine().Replace("\t", "");
+		if (tempLine.StartsWith("<ele>")) {
+			ele = HelpMethods.LeaveCenterFromString(tempLine, "<ele>", "</ele>");
+			tempLine = sr.ReadLine().Replace("\t", "");
+		}
 
 		// name (if exist)
 		string name = "";
-		string tempLine = sr.ReadLine().Replace("\t", "");
 		if (tempLine.StartsWith("<name>")) {
 			name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
 			tempLine = sr.ReadLine().Replace("\t", "");

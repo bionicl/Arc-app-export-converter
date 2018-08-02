@@ -322,7 +322,7 @@ public class XmlReader {
 		// name (if exist)
 		string name = "";
 		if (tempLine.StartsWith("<name>")) {
-			name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
+			name = HelpMethods.LeaveCenterFromString(tempLine.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Replace("&quot;", "\"").Replace("&apos;", "'"), "<name>", "</name>");
 			tempLine = sr.ReadLine().Replace("\t", "");
 		}
 		string link = "";

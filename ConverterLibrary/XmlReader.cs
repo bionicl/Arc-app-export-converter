@@ -305,15 +305,22 @@ public class XmlReader {
 
 		// time
 		DateTime startTime = new DateTime();
+		string tempLine = sr.ReadLine().Replace("\t", "");
+		if (!tempLine.StartsWith("<time>")) {
+			while (tempLine != "</wpt>") {
+				tempLine = sr.ReadLine().Replace("\t", "");
+			}
+			return;
+		}
 		startTime = HelpMethods.ParseIso8601(
 			HelpMethods.LeaveCenterFromString(
-				sr.ReadLine().Replace("\t", ""),
+				tempLine,
 				"<time>",
 				"</time>"));
 
 		// ele
 		string ele = "";
-		string tempLine = sr.ReadLine().Replace("\t", "");
+		tempLine = sr.ReadLine().Replace("\t", "");
 		if (tempLine.StartsWith("<ele>")) {
 			ele = HelpMethods.LeaveCenterFromString(tempLine, "<ele>", "</ele>");
 			tempLine = sr.ReadLine().Replace("\t", "");
@@ -322,7 +329,7 @@ public class XmlReader {
 		// name (if exist)
 		string name = "";
 		if (tempLine.StartsWith("<name>")) {
-			name = HelpMethods.LeaveCenterFromString(tempLine, "<name>", "</name>");
+			name = HelpMethods.LeaveCenterFromString(tempLine.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Replace("&quot;", "\"").Replace("&apos;", "'"), "<name>", "</name>");
 			tempLine = sr.ReadLine().Replace("\t", "");
 		}
 		string link = "";
@@ -364,11 +371,13 @@ public class XmlReader {
 			line = sr.ReadLine().Replace("\t", "");
 			if (line == "</trkseg>")
 				break;
-			else
+			else {
 				AddWaypoint(line, sr, coords);
+			}
 		}
 		if (coords.Count >= 2) {
-			if (timelineItems[timelineItems.Count - 1].type == XmlTimeline.TimelineItemType.activity &&
+			if (timelineItems.Count > 0 &&
+				timelineItems[timelineItems.Count - 1].type == XmlTimeline.TimelineItemType.activity &&
 				timelineItems[timelineItems.Count - 1].activity.activity == type) {
 				timelineItems[timelineItems.Count - 1].activity.MargeWithNew(coords.ToArray());
 			} else {

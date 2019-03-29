@@ -51,24 +51,39 @@ public static class HelpMethods {
 
 	// GPX conversion
 	public static XmlTimeline.Coordinates GetLatLon(string line) {
+		line = line.Substring(7);
 		string lat = "";
 		string lon = "";
-		bool captureMode = false;
+		bool latCapture = false;
+		bool lonCapture = false;
+		bool firstMark = true;
 		string capture = "";
 		foreach (char item in line) {
-			if (item == '"') {
-				captureMode = !captureMode;
-				if (captureMode == false) {
-					if (lat == "")
+			if (item == 't') {
+				latCapture = true;
+				firstMark = true;
+			} else if (item == 'n') {
+				lonCapture = true;
+				firstMark = true;
+			} else if (item == '"') {
+				if (firstMark == true) {
+					firstMark = false;
+				} else {
+					if (latCapture) {
+						latCapture = false;
 						lat = capture;
-					else
+					} else {
+						lonCapture = false;
 						lon = capture;
+					}
 					capture = "";
 				}
-			} else if (captureMode) {
+			} else if (latCapture || lonCapture) {
 				capture += item;
 			}
 		}
+		lat = lat.Substring(1);
+		lon = lon.Substring(1);
 		return new XmlTimeline.Coordinates(lat, lon);
 	}
 	public static string LeaveCenterFromString(string text, string removeLeft, string removeRight) {

@@ -301,22 +301,23 @@ public class XmlReader {
 	}
 
 	void GetPlace(string line, StreamReader sr) {
+		if (line.EndsWith("/>"))
+			return;
 		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
 
 		// time
-		DateTime startTime = new DateTime();
+		DateTime? startTime = null;
+
+		// time
 		string tempLine = sr.ReadLine().Replace("\t", "");
-		if (!tempLine.StartsWith("<time>")) {
-			while (tempLine != "</wpt>") {
-				tempLine = sr.ReadLine().Replace("\t", "");
-			}
-			return;
-		}
-		startTime = HelpMethods.ParseIso8601(
+		if (tempLine.StartsWith("<time>")) {
+			startTime = HelpMethods.ParseIso8601(
 			HelpMethods.LeaveCenterFromString(
 				tempLine,
 				"<time>",
 				"</time>"));
+			tempLine = sr.ReadLine().Replace("\t", "");
+		}
 
 		// ele
 		string ele = "";
@@ -345,7 +346,6 @@ public class XmlReader {
 		//if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
 		//	startTime = timelineItems.Last().activity.endTime;
 		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele, link)));
-
 	}
 	void GetMove(StreamReader sr) {
 		// Type

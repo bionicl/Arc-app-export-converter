@@ -40,6 +40,7 @@
     <Compile Include="JsonParser.cs" />
     <Compile Include="PlacesManager.cs" />
     <Compile Include="XmlReader.cs" />
+    <Compile Include="ElevationCalculator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

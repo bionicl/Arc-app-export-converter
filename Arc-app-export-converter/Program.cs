@@ -13,7 +13,7 @@ class MainClass {
 			Console.WriteLine("Places initialised");
 		}
 		SetupWeight();
-
+		DateTime startTime = DateTime.Now;
 		foreach (var item in ReturnFilePath()) {
 			Console.ForegroundColor = ConsoleColor.DarkGray;
 			Console.WriteLine();
@@ -28,6 +28,7 @@ class MainClass {
 
 		// On finish
 		PlacesManager.SavePlaces();
+		Console.WriteLine(DateTime.Now - startTime);
 	}
 
 	static void SetupWeight() {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using GpxTools;
 
 public class XmlTimeline {
 
@@ -245,12 +246,35 @@ public class XmlReader {
 	// Activity and places loading
 	public XmlReader(string path, bool isPath, float weight) {
 		this.weight = weight;
-		if (isPath) {
-			originalName = path.Replace(".gpx", "");
-			LoadFile(path);
-		} else {
-			LoadString(path);
+		string allText = File.ReadAllText(path);
+		byte[] byteArray = Encoding.UTF8.GetBytes(allText);
+		MemoryStream stream = new MemoryStream(byteArray);
+		GpxReader gpxReader = new GpxReader(stream);
+		while (gpxReader.Read()) {
+			switch (gpxReader.ObjectType) {
+				case GpxObjectType.Metadata:
+					//gpxReader.Metadata;
+					break;
+				case GpxObjectType.WayPoint:
+					//gpxReader.WayPoint;
+					break;
+				case GpxObjectType.Route:
+					//gpxReader.Route;
+					break;
+				case GpxObjectType.Track:
+					//gpxReader.Track;
+					break;
+			}
 		}
+		GpxAnalyser analyser = new GpxAnalyser(gpxReader);
+		Console.WriteLine(gpxReader.Read());
+
+		//if (isPath) {
+		//	originalName = path.Replace(".gpx", "");
+		//	LoadFile(path);
+		//} else {
+		//	LoadString(path);
+		//}
 	}
 	public XmlReader(List<XmlTimeline.TimelineItem> timelineItems) {
 		for (int i = 0; i < 10; i++) {

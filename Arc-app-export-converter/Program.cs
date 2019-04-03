@@ -21,9 +21,9 @@ class MainClass {
 			XmlReader xr = new XmlReader(item, true, weight);
 
 
-			// Split into days
-			List<XmlReader> daysInXml = XmlReader.Split(xr);
-			JsonParser.Parse(daysInXml, xr.originalName + ".json", true);
+			//// Split into days
+			//List<XmlReader> daysInXml = XmlReader.Split(xr);
+			//JsonParser.Parse(daysInXml, xr.originalName + ".json", true);
 		}
 
 		// On finish

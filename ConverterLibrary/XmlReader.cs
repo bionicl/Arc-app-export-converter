@@ -77,12 +77,18 @@ public class XmlTimeline {
 	public class Coordinates {
 		public double lat;
 		public double lon;
-		public string ele = null;
+		public double? ele = null;
 		public DateTime? time = null;
 
 		public Coordinates(string lat, string lon) {
 			this.lat = Convert.ToDouble(lat);
 			this.lon = Convert.ToDouble(lon);
+		}
+		public Coordinates(double lat, double lon, double? ele, DateTime? time) {
+			this.lat = lat;
+			this.lon = lon;
+			this.ele = ele;
+			this.time = time;
 		}
 		public Coordinates(double lat, double lon) {
 			this.lat = lat;
@@ -98,7 +104,7 @@ public class XmlTimeline {
 		public Coordinates position;
 		public DateTime? startTime;
 		public DateTime? endTime;
-		public string ele;
+		public double? ele;
 		public string link;
 
 		public int Duration {
@@ -112,10 +118,11 @@ public class XmlTimeline {
 			}
 		}
 
-		public Place(Coordinates position, string name, DateTime? startTime = null, string ele = null, string link = null) {
+		public Place(Coordinates position, string name, DateTime? startTime = null, double? ele = null, string link = null) {
 			this.position = position;
 			this.startTime = startTime;
 			this.name = name;
+			this.ele = ele;
 			this.link = link;
 		}
 
@@ -246,35 +253,16 @@ public class XmlReader {
 	// Activity and places loading
 	public XmlReader(string path, bool isPath, float weight) {
 		this.weight = weight;
-		string allText = File.ReadAllText(path);
+
+		string allText = "";
+		if (isPath) {
+			allText = File.ReadAllText(path);
+			originalName = path.Replace(".gpx", "");
+		} else
+			allText = path;
 		byte[] byteArray = Encoding.UTF8.GetBytes(allText);
 		MemoryStream stream = new MemoryStream(byteArray);
-		GpxReader gpxReader = new GpxReader(stream);
-		while (gpxReader.Read()) {
-			switch (gpxReader.ObjectType) {
-				case GpxObjectType.Metadata:
-					//gpxReader.Metadata;
-					break;
-				case GpxObjectType.WayPoint:
-					//gpxReader.WayPoint;
-					break;
-				case GpxObjectType.Route:
-					//gpxReader.Route;
-					break;
-				case GpxObjectType.Track:
-					//gpxReader.Track;
-					break;
-			}
-		}
-		GpxAnalyser analyser = new GpxAnalyser(gpxReader);
-		Console.WriteLine(gpxReader.Read());
-
-		//if (isPath) {
-		//	originalName = path.Replace(".gpx", "");
-		//	LoadFile(path);
-		//} else {
-		//	LoadString(path);
-		//}
+		Load(stream);
 	}
 	public XmlReader(List<XmlTimeline.TimelineItem> timelineItems) {
 		for (int i = 0; i < 10; i++) {
@@ -286,27 +274,27 @@ public class XmlReader {
 		SetXmlDate();
 	}
 
-	public void Load(StreamReader sr) {
+	public void Load(Stream stream) {
 		for (int i = 0; i < 10; i++) {
 			activitySummary[i] = new List<XmlTimeline.Activity>();
 		}
 
-		// Ignore first 2 lines
-		sr.ReadLine();
-		sr.ReadLine();
-
 		// Loop
 		timelineItems.Clear();
-		while (true) {
-			string line = sr.ReadLine().Replace("\t", "");
-			if (line.StartsWith("<wpt", StringComparison.Ordinal))
-				GetPlace(line, sr);
-			else if (line.StartsWith("<trk", StringComparison.Ordinal))
-				GetMove(sr);
-			else if (line.StartsWith("</gpx", StringComparison.Ordinal))
-				break;
-		};
-		sr.Close();
+		GpxReader gpxReader = new GpxReader(stream);
+		while (gpxReader.Read()) {
+			switch (gpxReader.ObjectType) {
+				case GpxObjectType.Metadata:
+					//gpxReader.Metadata;
+					break;
+				case GpxObjectType.WayPoint:
+					GetPlace(gpxReader.WayPoint);
+					break;
+				case GpxObjectType.Track:
+					GetMove(gpxReader.Track);
+					break;
+			}
+		}
 		SetStartEnd();
 		SetSummary();
 		SetXmlDate();
@@ -314,91 +302,40 @@ public class XmlReader {
 		//Display();
 	}
 
-	public void LoadString(string text) {
-		MemoryStream mStrm = new MemoryStream(Encoding.UTF8.GetBytes(text));
-		StreamReader tempSteamR = new StreamReader(mStrm, System.Text.Encoding.UTF8, true);
-		Load(tempSteamR);
-	}
-	public void LoadFile(string path) {
-		StreamReader sr = new StreamReader(path);
-		Load(sr);
-	}
-
-	void GetPlace(string line, StreamReader sr) {
-		if (line.EndsWith("/>"))
-			return;
-		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
-
+	void GetPlace(GpxTools.Gpx.GpxWayPoint waypoint) {
+		// location
+		XmlTimeline.Coordinates location = new XmlTimeline.Coordinates(waypoint.Latitude, waypoint.Longitude);
 		// time
-		DateTime? startTime = null;
-
-		// time
-		string tempLine = sr.ReadLine().Replace("\t", "");
-		if (tempLine.StartsWith("<time>")) {
-			startTime = HelpMethods.ParseIso8601(
-			HelpMethods.LeaveCenterFromString(
-				tempLine,
-				"<time>",
-				"</time>"));
-			tempLine = sr.ReadLine().Replace("\t", "");
-		}
-
+		DateTime? startTime = waypoint.Time;
 		// ele
-		string ele = "";
-		tempLine = sr.ReadLine().Replace("\t", "");
-		if (tempLine.StartsWith("<ele>")) {
-			ele = HelpMethods.LeaveCenterFromString(tempLine, "<ele>", "</ele>");
-			tempLine = sr.ReadLine().Replace("\t", "");
-		}
-
+		double? ele = waypoint.Elevation;
 		// name (if exist)
-		string name = "";
-		if (tempLine.StartsWith("<name>")) {
-			name = HelpMethods.LeaveCenterFromString(tempLine.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">").Replace("&quot;", "\"").Replace("&apos;", "'"), "<name>", "</name>");
-			tempLine = sr.ReadLine().Replace("\t", "");
-		}
+		string name = waypoint.Name;
 		string link = "";
-		if (tempLine.StartsWith("<link")) {
-			link = HelpMethods.LeaveCenterFromString(tempLine, "<link href=\"", "\" />");
-			tempLine = sr.ReadLine().Replace("\t", "");
-		}
-
+		if (waypoint.Links.Count > 0)
+			link = waypoint.Links[0].Href;
 		// If previous is place
 		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
 			timelineItems.Last().place.endTime = startTime;
-
 		//if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
 		//	startTime = timelineItems.Last().activity.endTime;
 		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele, link)));
 	}
-	void GetMove(StreamReader sr) {
-		// Type
-		string line = sr.ReadLine().Replace("\t", "");
-		if (line == "<trkseg />") {
-			sr.ReadLine();
-			return;
-		}
-		ActivityType type = ActivityType.car;
-		if (line.StartsWith("<type>", StringComparison.CurrentCulture)) {
-			line = HelpMethods.LeaveCenterFromString(line, "<type>", "</type>");
-			Enum.TryParse(line, out type);
+	void GetMove(GpxTools.Gpx.GpxTrack track) {
 
-			// Track points
-			line = sr.ReadLine().Replace("\t", "");
-		}
-		if (line == "<trkseg />") {
-			sr.ReadLine();
-			return;
-		}
+		// Type
+		ActivityType type = ActivityType.car;
+		Enum.TryParse(track.Type, out type);
+
+		// Track points
 		List<XmlTimeline.Coordinates> coords = new List<XmlTimeline.Coordinates>();
-		while (true) {
-			line = sr.ReadLine().Replace("\t", "");
-			if (line == "</trkseg>")
-				break;
-			else {
-				AddWaypoint(line, sr, coords);
-			}
+		GpxTools.Gpx.GpxPointCollection<GpxTools.Gpx.GpxPoint> points = new GpxTools.Gpx.GpxPointCollection<GpxTools.Gpx.GpxPoint>();
+			
+		points = track.ToGpxPoints();
+		foreach (var item in points) {
+			coords.Add(new XmlTimeline.Coordinates(item.Latitude, item.Longitude, item.Elevation, item.Time));
 		}
+
 		if (coords.Count >= 2) {
 			if (timelineItems.Count > 0 &&
 				timelineItems[timelineItems.Count - 1].type == XmlTimeline.TimelineItemType.activity &&
@@ -409,21 +346,8 @@ public class XmlReader {
 				AddTimeToPreviousPlace(newActivity);
 				timelineItems.Add(new XmlTimeline.TimelineItem(newActivity));
 				AddTimeToPreviousPlace(newActivity);
-				//activitySummary[(int)type].Add(newActivity);
 			}
 		}
-		sr.ReadLine();
-	}
-	void AddWaypoint(string line, StreamReader sr, List<XmlTimeline.Coordinates> coords) {
-		XmlTimeline.Coordinates location = HelpMethods.GetLatLon(line);
-		location.ele = HelpMethods.LeaveCenterFromString(sr.ReadLine().Replace("\t", ""), "<ele>", "</ele>");
-		location.time = HelpMethods.ParseIso8601(
-			HelpMethods.LeaveCenterFromString(
-				sr.ReadLine().Replace("\t", ""),
-				"<time>",
-				"</time>"));
-		sr.ReadLine();
-		coords.Add(location);
 	}
 	void AddTimeToPreviousPlace(XmlTimeline.Activity activity) {
 		if (timelineItems.Count >= 1) {
@@ -486,6 +410,7 @@ public class XmlReader {
 		}
 		Console.WriteLine();
 		Console.ForegroundColor = ConsoleColor.DarkGray;
+		Console.WriteLine("Lenght: " + summary.Length);
 		foreach (var item in summary) {
 			if (item.duration > 0)
 				Console.WriteLine(item.ToString());

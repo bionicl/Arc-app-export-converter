@@ -29,7 +29,10 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="GpxTools">
+      <HintPath>..\packages\GpxTools.macharius40.1.0.2\lib\netstandard2.0\GpxTools.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +43,7 @@
     <Compile Include="JsonParser.cs" />
     <Compile Include="PlacesManager.cs" />
     <Compile Include="XmlReader.cs" />
+    <Compile Include="ElevationCalculator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

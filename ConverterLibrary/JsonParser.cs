@@ -238,7 +238,7 @@ public static class JsonParser {
 		sw.Write(json);
 		sw.Close();
 		Console.ForegroundColor = ConsoleColor.DarkGreen;
-		Console.WriteLine(string.Format("Json file created!"));
+		Console.WriteLine(string.Format("Json file created!\n") + fileName);
 	}
 }
 

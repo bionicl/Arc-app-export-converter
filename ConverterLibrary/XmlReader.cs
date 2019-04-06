@@ -34,12 +34,15 @@ public class XmlTimeline {
 		}
 
 		//Time
-		public DateTime ReturnDate() {
+		public DateTime? ReturnDate() {
 			DateTime tempDate = new DateTime();
 			if (type == TimelineItemType.activity)
 				tempDate = activity.startTime;
-			else
+			else {
+				if (!place.startTime.HasValue)
+					return null;
 				tempDate = place.startTime.Value;
+			}
 			return new DateTime(tempDate.Year, tempDate.Month, tempDate.Day, 12, 0, 0, tempDate.Kind);
 		}
 
@@ -315,10 +318,14 @@ public class XmlReader {
 		if (waypoint.Links.Count > 0)
 			link = waypoint.Links[0].Href;
 		// If previous is place
-		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
-			timelineItems.Last().place.endTime = startTime;
-		//if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity)
-		//	startTime = timelineItems.Last().activity.endTime;
+		if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.place) {
+			if (!timelineItems.Last().place.endTime.HasValue && startTime.HasValue)
+				timelineItems.Last().place.endTime = startTime;
+			else {
+				startTime = timelineItems.Last().place.startTime;
+			}
+		} else if (timelineItems.Count >= 1 && timelineItems.Last().type == XmlTimeline.TimelineItemType.activity && !startTime.HasValue)
+			startTime = timelineItems.Last().activity.endTime;
 		timelineItems.Add(new XmlTimeline.TimelineItem(new XmlTimeline.Place(location, name, startTime, ele, link)));
 	}
 	void GetMove(GpxTools.Gpx.GpxTrack track) {
@@ -353,19 +360,33 @@ public class XmlReader {
 		if (timelineItems.Count >= 1) {
 			if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place)
 				timelineItems.Last().place.endTime = activity.startTime;
+			if (timelineItems.Count >= 2)
+				if (timelineItems[timelineItems.Count - 2].type == XmlTimeline.TimelineItemType.place && !timelineItems[timelineItems.Count - 2].place.endTime.HasValue)
+					timelineItems[timelineItems.Count - 2].place.endTime = activity.startTime;
 		}
 	}
 
 	// End calculations
 	void SetStartEnd() {
 		if (timelineItems.First().type == XmlTimeline.TimelineItemType.place && !timelineItems.First().place.startTime.HasValue) {
-			DateTime time = timelineItems.First().place.endTime.Value;
+			DateTime time = new DateTime();
+			if (timelineItems.First().place.endTime.HasValue)
+				time = timelineItems.First().place.endTime.Value;
+			else if (timelineItems[1].type == XmlTimeline.TimelineItemType.place && timelineItems[1].place.startTime.HasValue)
+				time = timelineItems[1].place.startTime.Value;
+			else if (timelineItems[1].type == XmlTimeline.TimelineItemType.activity)
+				time = timelineItems[1].activity.startTime;
 			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 0, 0, 0, time.Kind);
 			timelineItems.First().place.startTime = newTime;
 		}
-
 		if (timelineItems.Last().type == XmlTimeline.TimelineItemType.place && !timelineItems.Last().place.endTime.HasValue) {
-			DateTime time = timelineItems.Last().place.startTime.Value;
+			DateTime time = new DateTime();
+			if (timelineItems.Last().place.startTime.HasValue)
+				time = timelineItems.Last().place.startTime.Value;
+			else if (timelineItems[timelineItems.Count - 2].type == XmlTimeline.TimelineItemType.place && timelineItems[timelineItems.Count - 2].place.endTime.HasValue)
+				time = timelineItems[timelineItems.Count - 2].place.endTime.Value;
+			else if (timelineItems[timelineItems.Count - 2].type == XmlTimeline.TimelineItemType.activity)
+				time = timelineItems[timelineItems.Count - 2].activity.endTime;
 			DateTime newTime = new DateTime(time.Year, time.Month, time.Day, 23, 59, 59, time.Kind);
 			timelineItems.Last().place.endTime = newTime;
 		}
@@ -437,7 +458,9 @@ public class XmlReader {
 				currentDate = item.ReturnDate();
 			}
 
-			if (currentDate == item.ReturnDate()) {
+			if (item.ReturnDate() == null) {
+
+			} if (currentDate == item.ReturnDate()) {
 				tempList.Add(item);
 				lastItem = item;
 			} else {

@@ -182,7 +182,7 @@ public class XmlTimeline {
 			get {
 				if (calories.HasValue)
 					return calories.Value;
-				int temp = BurnedCalCalculator.Calcualate(activity, Duration, Speed, 80);
+				int temp = BurnedCalCalculator.Calcualate(activity, Duration, Speed, XmlReader.weight);
 				calories = temp;
 				return calories.Value;
 			}
@@ -251,11 +251,12 @@ public class XmlReader {
 	public DateTime date;
 	public ActivitySummary[] summary = new ActivitySummary[10];
 	public string originalName;
-	public float weight;
+
+	public static float weight;
 
 	// Activity and places loading
 	public XmlReader(string path, bool isPath, float weight) {
-		this.weight = weight;
+		XmlReader.weight = weight;
 
 		string allText = "";
 		if (isPath) {
@@ -302,7 +303,7 @@ public class XmlReader {
 		SetSummary();
 		SetXmlDate();
 
-		//Display();
+		Display();
 	}
 
 	void GetPlace(GpxTools.Gpx.GpxWayPoint waypoint) {

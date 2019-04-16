@@ -310,9 +310,11 @@ public class XmlReader {
 		// location
 		XmlTimeline.Coordinates location = new XmlTimeline.Coordinates(waypoint.Latitude, waypoint.Longitude);
 		// time
-		DateTime? startTime = waypoint.Time;
+		DateTime? startTime = new DateTime();
+		if (waypoint.Time.HasValue)
+			startTime = waypoint.Time.Value.ToLocalTime();
 		// ele
-		double? ele = waypoint.Elevation;
+		double ? ele = waypoint.Elevation;
 		// name (if exist)
 		string name = waypoint.Name;
 		string link = "";
@@ -341,7 +343,7 @@ public class XmlReader {
 			
 		points = track.ToGpxPoints();
 		foreach (var item in points) {
-			coords.Add(new XmlTimeline.Coordinates(item.Latitude, item.Longitude, item.Elevation, item.Time));
+			coords.Add(new XmlTimeline.Coordinates(item.Latitude, item.Longitude, item.Elevation, item.Time.Value.ToLocalTime()));
 		}
 
 		if (coords.Count >= 2) {
